@@ -1,6 +1,5 @@
-import React, { FC, useRef, useState, useEffect, useCallback } from "react";
-import { Button, Carousel, Typography, notification } from "antd";
-import { CarouselRef } from "antd/lib/carousel";
+import React, { FC, useState, useEffect, useCallback } from "react";
+import { Button, Typography, notification } from "antd";
 import QuestionCard from "./QuestionCard";
 import Timer from "./Timer";
 import Results from "./Results";
@@ -12,7 +11,6 @@ import ProgressBar from "./ProgressBar";
 const { Paragraph } = Typography;
 
 const Testing: FC = () => {
-  const carouselRef = useRef<CarouselRef>(null);
   const [results, setResults] = useState<{ [id: number]: string | string[] }>(
     () => {
       const savedResults = localStorage.getItem("results");
@@ -37,7 +35,9 @@ const Testing: FC = () => {
   });
   const [isTestComplete, setIsTestComplete] = useState<boolean>(false);
   const [isAnswered, setIsAnswered] = useState<boolean>(false);
-  const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [hasStarted, setHasStarted] = useState<boolean>(() => {
+    return localStorage.getItem("hasStarted") === "true";
+  });
 
   const handleFinalSubmit = useCallback(() => {
     console.log("Results:", results);
@@ -45,6 +45,7 @@ const Testing: FC = () => {
     localStorage.removeItem("currentSlide");
     localStorage.removeItem("timeLeft");
     localStorage.removeItem("answeredQuestions");
+    localStorage.removeItem("hasStarted");
     setIsTestComplete(true);
   }, [results]);
 
@@ -65,8 +66,17 @@ const Testing: FC = () => {
         "answeredQuestions",
         JSON.stringify(Array.from(answeredQuestions))
       );
+      localStorage.setItem("timeLeft", timeLeft.toString());
+      localStorage.setItem("hasStarted", hasStarted.toString());
     }
-  }, [results, currentSlide, isTestComplete, answeredQuestions]);
+  }, [
+    results,
+    currentSlide,
+    isTestComplete,
+    answeredQuestions,
+    timeLeft,
+    hasStarted,
+  ]);
 
   useEffect(() => {
     const currentQuestion = test.questions[currentSlide];
@@ -91,7 +101,7 @@ const Testing: FC = () => {
       new Set(prev).add(test.questions[currentSlide].id)
     );
     if (currentSlide < test.questions.length - 1) {
-      carouselRef.current?.next();
+      setCurrentSlide(currentSlide + 1);
     }
   }, [currentSlide]);
 
@@ -102,6 +112,11 @@ const Testing: FC = () => {
     setTimeLeft(test.timeLimit ?? 0);
     setIsTestComplete(false);
     setHasStarted(false);
+    localStorage.removeItem("results");
+    localStorage.removeItem("currentSlide");
+    localStorage.removeItem("timeLeft");
+    localStorage.removeItem("answeredQuestions");
+    localStorage.removeItem("hasStarted");
   };
 
   const handleStart = () => {
@@ -120,10 +135,11 @@ const Testing: FC = () => {
     localStorage.removeItem("currentSlide");
     localStorage.removeItem("timeLeft");
     localStorage.removeItem("answeredQuestions");
+    localStorage.removeItem("hasStarted");
   };
 
   return (
-    <div className={styles.testBlock}>
+    <div className={styles.testBlock} tabIndex={-1}>
       {!hasStarted ? (
         <div style={{ textAlign: "center", padding: 20 }}>
           <Button type="primary" size="large" onClick={handleStart}>
@@ -135,25 +151,17 @@ const Testing: FC = () => {
           <Paragraph>Вопросы</Paragraph>
           <Timer initialTime={timeLeft} onTimeUp={handleTimeUp} />
           <ProgressBar answeredQuestions={answeredQuestions} />
-          <Carousel
-            infinite={false}
-            ref={carouselRef}
-            afterChange={(current) => setCurrentSlide(current)}
-          >
-            {test.questions.map((q) => (
-              <div key={q.id}>
-                <QuestionCard
-                  id={q.id}
-                  question={q.question}
-                  answers={q.answers}
-                  multipleChoice={q.multipleChoice}
-                  answerType={q.answerType}
-                  onAnswerChange={handleAnswerChange}
-                  disabled={isTestComplete}
-                />
-              </div>
-            ))}
-          </Carousel>
+          <div>
+            <QuestionCard
+              id={test.questions[currentSlide].id}
+              question={test.questions[currentSlide].question}
+              answers={test.questions[currentSlide].answers}
+              multipleChoice={test.questions[currentSlide].multipleChoice}
+              answerType={test.questions[currentSlide].answerType}
+              onAnswerChange={handleAnswerChange}
+              disabled={isTestComplete}
+            />
+          </div>
           <ControlButtons
             isAnswered={isAnswered}
             isLastQuestion={currentSlide === test.questions.length - 1}

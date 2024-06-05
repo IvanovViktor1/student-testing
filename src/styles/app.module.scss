@@ -1,4 +1,5 @@
 .testBlock {
+  outline: none !important;
   max-width: 800px;
   margin: 0 auto;
   text-align: center;
@@ -12,4 +13,19 @@
   max-width: 800px;
   margin: 0 auto;
   text-align: center;
+}
+
+.ant-carousel .slick-track {
+  display: flex;
+  align-items: center;
+}
+
+.ant-carousel .slick-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ant-carousel .slick-dots {
+  display: none;
 }
